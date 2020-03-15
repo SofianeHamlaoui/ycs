@@ -17,9 +17,7 @@ A small command line utility for scraping YouTube comments using Python3 and You
 
 1- First, install python3
 
-```
-    # On ubuntu for example
-   
+```   
     sudo apt install python3 < Debian-based distributions
     sudo dnf install python3 < RPM-based distributions
     sudo pacman -S python3 < Arch-based distributions
