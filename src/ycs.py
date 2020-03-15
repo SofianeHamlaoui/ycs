@@ -1,27 +1,45 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-# Sample Python code for youtube.commentThreads.list
-# See instructions for running these code samples locally:
-# https://developers.google.com/explorer-help/guides/code_samples#python
-
 import os
+import sys
+from sys import argv
 import googleapiclient.discovery
-import json
+#import json
 
+#def get_authentication():
+#    CLIENT_SECRETS_FILE = "client_secret.json"
+#    SCOPE = ['https://www.googleapis.com/auth/youtube.force-ssl']
+#    API_SERVICE_NAME = "youtube"
+#    API_VERSION = "v3"
+#    flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPE)
+#    credentials = None
+#    if os.path.exists('token.pickle'):
+#        with open('token.pickle', 'rb') as token:
+#            credentials = pickle.load(token)
+#    #  Check if the credentials are invalid or do not exist
+#    if not credentials or not credentials.valid:
+#        # Check if the credentials have expired
+#        if credentials and credentials.expired and credentials.refresh_token:
+#            credentials.refresh(Request())
+#        else:
+#            flow = InstalledAppFlow.from_client_secrets_file(
+#                CLIENT_SECRETS_FILE, SCOPE)
+#            credentials = flow.run_console()
+#        # Save the credentials for the next run
+#        with open('token.pickle', 'wb') as token:
+#            pickle.dump(credentials, token)
+#    return build(API_SERVICE_NAME, API_VERSION, credentials = credentials)
+#
+#get_authentication()
 
 def extract_comments(video_id, youtube_api_key=None, max_response=0):
-    # max_response is not already implemented
+    threads = []
+    comments =[]
     if youtube_api_key is None:
-        print("You have to give a youtube API key")
-        print("See how to get one there : 'https://www.youtube.com/watch?v=pP4zvduVAqo'")
-
-    # *DO NOT* leave this option enabled in production.
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
+        print("""\033[0;31mYou have to give a Youtube Data API key")
+            See how to get one there : 'https://www.youtube.com/watch?v=pP4zvduVAqo' \033[0m""")
     api_service_name = "youtube"
     api_version = "v3"
-
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, developerKey=youtube_api_key)
 
@@ -30,26 +48,40 @@ def extract_comments(video_id, youtube_api_key=None, max_response=0):
         maxResults=100,
         textFormat="plainText",
         videoId=video_id
-    )
-    response = request.execute()
-    items = response['items']
+    ).execute()
+    items = request['items']
+    for item in request['items']:
+        threads.append(item)
+        comment = item["snippet"]["topLevelComment"]
+        text = comment["snippet"]["textDisplay"]
+        comments.append(text)
+    return(comments)
 
-    while 'nextPageToken' in response:
-        request = youtube.commentThreads().list(
-            part="replies,snippet",
-            maxResults=100,
-            textFormat="plainText",
-            videoId=video_id,
-            pageToken=response['nextPageToken']
-        )
-        response = request.execute()
-        items = items + response['items']
 
-    return items
+def get_author(video_id, youtube_api_key=None, max_response=0):
+    threads = []
+    comments =[]
+    authorDisplayName = []
+    api_service_name = "youtube"
+    api_version = "v3"
+    youtube = googleapiclient.discovery.build(
+        api_service_name, api_version, developerKey=youtube_api_key)
 
+    request = youtube.commentThreads().list(
+        part="replies,snippet",
+        maxResults=100,
+        textFormat="plainText",
+        videoId=video_id
+    ).execute()
+    items = request['items']
+    for item in request['items']:
+        threads.append(item)
+        comment = item["snippet"]["topLevelComment"]
+        text = comment["snippet"]["authorDisplayName"]
+        authorDisplayName.append(text)
+    return(authorDisplayName)
 
 def get_api_from_file(file_name='./api.key'):
-    # get the API key from a file given by argument
     if not os.path.isfile(file_name):
         if os.path.isfile('./api.key'):
             file_name = './api.key'
@@ -63,13 +95,18 @@ def get_api_from_file(file_name='./api.key'):
     file = open(file_name, 'r')
     return file.readline()[:-1]
 
-
 if __name__ == "__main__":
+    if(len(sys.argv) == 1):
+        print("""
+            \033[0;32mUsage : python3 ycs.py \033[1;33mYOUTUBE_URL\033[0m""")
+        exit()
     api_key = get_api_from_file()
-    video_id = 'pP4zvduVAqo'  # will be possible to give it by argument
-    output_file = 'output.json'  # not implemented yet
-
-    comments = extract_comments(video_id, api_key)
-
-    print(json.dumps(comments, indent=4, sort_keys=True))
-    #print(str(len(comments)) + " Comments extracted.")
+    vid_id = (" ".join(sys.argv[1:]).replace('https://www.youtube.com/watch?v=', '')).rstrip('\n')
+    authorDisplayName = get_author(vid_id, api_key)
+    comments = extract_comments(vid_id, api_key)
+    resu = list(map(lambda x, y: "\033[1;33m"+x+"\033[0m" + ' commented : \033[0;34m' +y+"\033[0m\n", authorDisplayName, comments))
+    #resu_si = list(map(lambda x, y: x+' commented : ' +y +'\n', authorDisplayName, comments))
+    if(len(sys.argv) == 2):
+        print(*resu, sep = "\n")
+#    #print(json.dumps(comments, indent=4, sort_keys=True))
+#    #print(str(len(comments)) + " Comments extracted.")
