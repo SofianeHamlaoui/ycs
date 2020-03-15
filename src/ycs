@@ -98,7 +98,7 @@ def get_api_from_file(file_name='./api.key'):
 if __name__ == "__main__":
     if(len(sys.argv) == 1):
         print("""
-            \033[0;32mUsage : python3 ycs.py \033[1;33mYOUTUBE_URL\033[0m""")
+            \033[0;32mUsage : ycs \033[1;33mYOUTUBE_URL\033[0m""")
         exit()
     api_key = get_api_from_file()
     vid_id = (" ".join(sys.argv[1:]).replace('https://www.youtube.com/watch?v=', '')).rstrip('\n')
